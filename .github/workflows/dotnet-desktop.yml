@@ -36,5 +36,5 @@ jobs:
       - name: Publish Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: COM3D2.VRResolutionSetting.Plugin
+          name: COM3D2.SyncGripMoveGUI.Plugin
           path: /home/runner/work/COM3D2.SyncGripMoveGUI.Plugin/COM3D2.SyncGripMoveGUI.Plugin/COM3D2.SyncGripMoveGUI.Plugin/bin/Release/net35/COM3D2.SyncGripMoveGUI.Plugin.dll
