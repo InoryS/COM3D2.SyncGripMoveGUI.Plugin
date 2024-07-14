@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COM3D2.SyncGripMoveGUI.plugin", "COM3D2.SyncGripMoveGUI.plugin\COM3D2.SyncGripMoveGUI.plugin.csproj", "{CFD6D411-6596-470B-A2A2-7D9294D8C8B7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin\COM3D2.SyncGripMoveGUI.Plugin.csproj", "{CFD6D411-6596-470B-A2A2-7D9294D8C8B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
