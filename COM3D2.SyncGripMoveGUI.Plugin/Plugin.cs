@@ -1,93 +1,58 @@
 ﻿using System;
 using System.Reflection;
 using BepInEx;
-//using BepInEx.Logging;
-//using UnityEngine;
-//using UnityEngine.VR;
+using HarmonyLib;
+using BepInEx.Logging;
+using UnityEngine;
+using UnityEngine.VR;
 
 namespace COM3D2.SyncGripMoveGUI.Plugin
 {
-    [BepInPlugin("com.inorys.syncgripnovegui", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.0")]
+    [BepInPlugin("com.inorys.syncgripnovegui", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.1")]
     public class SyncGripMoveGUI : BaseUnityPlugin
     {
-        private OvrTablet _ovrTablet;
-        private FieldInfo _visibleField;
-        private MethodInfo _toggleIMGUIVisibleMethod;
-        private bool _previousVisibleState;
-        private bool _isInitialized = false;
-
+        public static ManualLogSource Logger;
         private void Awake()
         {
             Logger.LogInfo("SyncOvrTabletWithOldGUI Plugin Loaded");
+
+            // Use Harmony to hook OvrTablet's SetVisible method
+            Harmony harmony = new Harmony("com.inorys.syncgripnovegui");
+            harmony.PatchAll();
         }
 
-        private void Start()
+        [HarmonyPatch(typeof(OvrTablet), "SetVisible")]
+        public static class OvrTabletSetVisiblePatch
         {
-            // Find the OvrTablet object at startup
-            _ovrTablet = FindObjectOfType<OvrTablet>();
+            static MethodInfo _toggleIMGUIVisibleMethod;
 
-            // If the object is found, get the reflection information of the m_bVisible field
-            if (_ovrTablet != null)
+            static OvrTabletSetVisiblePatch()
             {
-                _visibleField = typeof(OvrTablet).GetField("m_bVisible", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (_visibleField != null)
+                // Get the reflection information of the IMGUIQuad.ToggleIMGUIVisible method
+                Type imguiQuadType = Type.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad, CM3D2.GripMovePlugin.Plugin");
+                if (imguiQuadType != null)
                 {
-                    _previousVisibleState = (bool)_visibleField.GetValue(_ovrTablet);
-                    UpdateOldGUIVisibility(_previousVisibleState);
-
-                    // Get the reflection information of the IMGUIQuad.ToggleIMGUIVisible method
-                    Type imguiQuadType =
-                        Type.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad, CM3D2.GripMovePlugin.Plugin");
-                    if (imguiQuadType != null)
+                    _toggleIMGUIVisibleMethod =
+                        imguiQuadType.GetMethod("ToggleIMGUIVisible", BindingFlags.Public | BindingFlags.Static);
+                    if (_toggleIMGUIVisibleMethod == null)
                     {
-                        _toggleIMGUIVisibleMethod = imguiQuadType.GetMethod("ToggleIMGUIVisible",
-                            BindingFlags.Public | BindingFlags.Static);
-                        if (_toggleIMGUIVisibleMethod != null)
-                        {
-                            _isInitialized = true;
-                        }
-                        else
-                        {
-                            Logger.LogError("ToggleIMGUIVisible method not found in IMGUIQuad.");
-                        }
-                    }
-                    else
-                    {
-                        Logger.LogError("IMGUIQuad type not found.");
+                        Logger.LogError("ToggleIMGUIVisible method not found in IMGUIQuad.");
                     }
                 }
                 else
                 {
-                    Logger.LogError("m_bVisible field not found in OvrTablet.");
+                    Logger.LogError("IMGUIQuad type not found.");
                 }
             }
-            else
-            {
-                Logger.LogError("OvrTablet object not found in the scene.");
-            }
-        }
 
-        private void Update()
-        {
-            // Perform the check only after initialization succeeded
-            if (_isInitialized)
+            static void Postfix(OvrTablet __instance, bool f_bVisible)
             {
-                bool currentVisibleState = (bool)_visibleField.GetValue(_ovrTablet);
-                if (currentVisibleState != _previousVisibleState)
+                // Called after the SetVisible method is executed
+                if (_toggleIMGUIVisibleMethod != null && !f_bVisible)
                 {
-                    _previousVisibleState = currentVisibleState;
-                    UpdateOldGUIVisibility(_previousVisibleState);
+                    _toggleIMGUIVisibleMethod.Invoke(null, null);
+                    Logger.LogInfo("Old GUI visibility toggled due to OvrTablet visibility change.");
                 }
-            }
-        }
-
-        private void UpdateOldGUIVisibility(bool isVisible)
-        {
-            // If m_bVisible is false, hide the old GUI
-            if (!isVisible)
-            {
-                _toggleIMGUIVisibleMethod.Invoke(null, null);
-                Logger.LogInfo("Old GUI visibility toggled due to OvrTablet visibility change.");
             }
         }
     }
