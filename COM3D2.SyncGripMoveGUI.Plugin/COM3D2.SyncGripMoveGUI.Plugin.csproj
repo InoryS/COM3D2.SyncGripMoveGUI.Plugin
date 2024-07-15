@@ -4,7 +4,7 @@
         <TargetFramework>net35</TargetFramework>
         <AssemblyName>COM3D2.SyncGripMoveGUI.Plugin</AssemblyName>
 	<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <RestoreAdditionalProjectSources>

@@ -8,50 +8,57 @@ using UnityEngine.VR;
 
 namespace COM3D2.SyncGripMoveGUI.Plugin
 {
-    [BepInPlugin("com.inorys.syncgripnovegui", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.1")]
+    [BepInPlugin("com.inorys.syncgripmovegui", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.2")]
     public class SyncGripMoveGUI : BaseUnityPlugin
     {
-        public static ManualLogSource Logger;
+        public static new ManualLogSource Logger;
+        private static MethodInfo _toggleGUIVisibleMethod;
+
         private void Awake()
         {
-            Logger.LogInfo("SyncOvrTabletWithOldGUI Plugin Loaded");
+            Logger = base.Logger;
+            Logger.LogInfo("COM3D2.SyncGripMoveGUI.Plugin Loaded");
 
-            // Use Harmony to hook OvrTablet's SetVisible method
-            Harmony harmony = new Harmony("com.inorys.syncgripnovegui");
+            //Use Harmony to hook OvrTablet's SetVisible method
+            Harmony harmony = new Harmony("com.inorys.syncgripmovegui");
             harmony.PatchAll();
+        }
+
+        private void Start()
+        {
+            // Get reflection information of GUIQuad.switchVisibility method
+            Type guiQuadType = Type.GetType("CM3D2.GripMovePlugin.Plugin.GUIQuad, CM3D2.GripMovePlugin.Plugin");
+            if (guiQuadType != null)
+            {
+                _toggleGUIVisibleMethod = guiQuadType.GetMethod("switchVisibility", BindingFlags.Public | BindingFlags.Static);
+                if (_toggleGUIVisibleMethod == null)
+                {
+                    Logger.LogError("switchVisibility method not found in GUIQuad.");
+                }
+            }
+            else
+            {
+                Logger.LogError("GUIQuad type not found.");
+            }
         }
 
         [HarmonyPatch(typeof(OvrTablet), "SetVisible")]
         public static class OvrTabletSetVisiblePatch
         {
-            static MethodInfo _toggleIMGUIVisibleMethod;
-
-            static OvrTabletSetVisiblePatch()
-            {
-                // Get the reflection information of the IMGUIQuad.ToggleIMGUIVisible method
-                Type imguiQuadType = Type.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad, CM3D2.GripMovePlugin.Plugin");
-                if (imguiQuadType != null)
-                {
-                    _toggleIMGUIVisibleMethod =
-                        imguiQuadType.GetMethod("ToggleIMGUIVisible", BindingFlags.Public | BindingFlags.Static);
-                    if (_toggleIMGUIVisibleMethod == null)
-                    {
-                        Logger.LogError("ToggleIMGUIVisible method not found in IMGUIQuad.");
-                    }
-                }
-                else
-                {
-                    Logger.LogError("IMGUIQuad type not found.");
-                }
-            }
-
             static void Postfix(OvrTablet __instance, bool f_bVisible)
             {
-                // Called after the SetVisible method is executed
-                if (_toggleIMGUIVisibleMethod != null && !f_bVisible)
+                // Called after the SetVisible method executes
+                if (_toggleGUIVisibleMethod != null)
                 {
-                    _toggleIMGUIVisibleMethod.Invoke(null, null);
-                    Logger.LogInfo("Old GUI visibility toggled due to OvrTablet visibility change.");
+                    try
+                    {
+                        _toggleGUIVisibleMethod.Invoke(null, new object[] { f_bVisible });
+                        Logger.LogInfo($"Old GUI visibility toggled due to OvrTablet visibility change. New visibility: {f_bVisible}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Error invoking switchVisibility: {ex.Message}");
+                    }
                 }
             }
         }
