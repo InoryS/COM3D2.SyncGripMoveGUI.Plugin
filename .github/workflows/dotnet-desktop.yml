@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup MSBuild.exe path
         run: |
@@ -34,7 +34,7 @@ jobs:
           msbuild /p:Configuration=Release /p:TargetFrameworkVersion=v3.5
 
       - name: Publish Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: COM3D2.SyncGripMoveGUI.Plugin
           path: /home/runner/work/COM3D2.SyncGripMoveGUI.Plugin/COM3D2.SyncGripMoveGUI.Plugin/COM3D2.SyncGripMoveGUI.Plugin/bin/Release/net35/COM3D2.SyncGripMoveGUI.Plugin.dll
