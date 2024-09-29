@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace COM3D2.SyncGripMoveGUI.Plugin
 {
-    [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.5.0")]
+    [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.6.0")]
     public class SyncGripMoveGUI : BaseUnityPlugin
     {
         void Start()
@@ -59,22 +59,65 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
                         var isVisbleProperty = imguiQuadType.GetProperty("IsVisble",
                             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-                        if (isVisbleProperty != null)
+                        // 获取 GripMovePlugin 的实例
+                        var gripMovePluginType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.GripMovePlugin");
+                        var pluginInstances = UnityEngine.Object.FindObjectsOfType(gripMovePluginType);
+                        var gripMovePluginInstance = pluginInstances.FirstOrDefault(); // 获取第一个实例
+
+                        if (gripMovePluginInstance != null)
                         {
-                            // 设置 IsVisble 属性的值，使其与游戏 UI 的可见性同步
-                            isVisbleProperty.SetValue(
-                                obj: null,
-                                value: f_bShow,
-                                invokeAttr: BindingFlags.Static | BindingFlags.SetProperty | BindingFlags.NonPublic |
-                                            BindingFlags.Public,
-                                binder: null,
-                                index: null,
-                                culture: CultureInfo.InvariantCulture
-                            );
+                            // 获取 menuTool 字段
+                            var menuToolField = gripMovePluginType.GetField("menuTool", BindingFlags.Instance | BindingFlags.NonPublic);
+                            var menuToolInstance = menuToolField?.GetValue(gripMovePluginInstance);
+
+                            if (menuToolInstance != null)
+                            {
+                                // 通过反射调用 IsDirectModeActive 方法
+                                var isDirectModeActiveMethod = menuToolInstance.GetType().GetMethod("IsDirectModeActive");
+
+                                if (isDirectModeActiveMethod != null)
+                                {
+                                    bool isDirectModeActive = (bool)isDirectModeActiveMethod.Invoke(menuToolInstance, null);
+
+                                    // 只有在 f_bShow 为 true 且处于 DIRECT 模式时，才设置 IsVisble 为 true
+                                    if (f_bShow && isDirectModeActive)
+                                    {
+                                        isVisbleProperty?.SetValue(
+                                            obj: null,
+                                            value: true,
+                                            invokeAttr: BindingFlags.Static | BindingFlags.SetProperty | BindingFlags.NonPublic |
+                                                        BindingFlags.Public,
+                                            binder: null,
+                                            index: null,
+                                            culture: CultureInfo.InvariantCulture
+                                        );
+                                    }
+                                    else
+                                    {
+                                        isVisbleProperty?.SetValue(
+                                            obj: null,
+                                            value: false,
+                                            invokeAttr: BindingFlags.Static | BindingFlags.SetProperty | BindingFlags.NonPublic |
+                                                        BindingFlags.Public,
+                                            binder: null,
+                                            index: null,
+                                            culture: CultureInfo.InvariantCulture
+                                        );
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.LogError("SyncGripMoveGUIPlugin Error: IsDirectModeActive method not found.");
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogError("SyncGripMoveGUIPlugin Error: menuTool instance not found.");
+                            }
                         }
                         else
                         {
-                            Debug.LogError("SyncGripMoveGUIPlugin Error: IsVisble property not found.");
+                            Debug.LogError("SyncGripMoveGUIPlugin Error: GripMovePlugin instance not found.");
                         }
                     }
                     else
