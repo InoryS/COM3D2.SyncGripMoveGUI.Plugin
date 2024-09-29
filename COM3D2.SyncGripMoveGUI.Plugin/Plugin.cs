@@ -11,7 +11,7 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
     [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.5.0")]
     public class SyncGripMoveGUI : BaseUnityPlugin
     {
-        void Awake()
+        void Start()
         {
             if (!Environment.CommandLine.ToLower().Contains("/vr"))
             {
@@ -26,7 +26,7 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
     }
 
     [HarmonyPatch]
-    public class OvrCamera_ShowUI_Patch
+    public class OvrCameraShowUIPatch
     {
         // 指定要补丁的方法为 OvrCamera 类的 ShowUI(bool f_bShow) 方法
         static MethodBase TargetMethod()
