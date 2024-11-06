@@ -5,28 +5,24 @@ using System.Reflection;
 using UnityEngine;
 using System.Linq;
 using System.Globalization;
-using BepInEx.Configuration;
 
 namespace COM3D2.SyncGripMoveGUI.Plugin
 {
-    [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.8.0")]
+    [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.0.9.0")]
     public class SyncGripMoveGUI : BaseUnityPlugin
     {
-        // private ConfigEntry<KeyboardShortcut> toggleVisibilityShortcut;
-        // private bool isOldGUIVisible = false;
         public static bool isOfficalTableVisible = false;
+        public static bool isDirectModeActive = false;
 
-        // 缓存反射获取的类型和属性，避免重复获取
-        private static Assembly gripMoveAssembly;
-        private static Type gripMovePluginType;
-        private static Type menuToolType;
-        private static Type imguiQuadType;
-        private static PropertyInfo isVisbleProperty;
-        private static MethodInfo isDirectModeActiveMethod;
-        private static FieldInfo menuToolField;
-        private static object cachedGripMovePluginInstance = null;
-        private static object cachedMenuToolInstance = null;
+        private bool previousIsDirectModeActive = false;
+        private Transform leftHandAnchor;
+        private Transform rightHandAnchor;
+        private static PropertyInfo isVisbleProperty = null;
 
+        private ViveController leftViveController;
+        private ViveController rightViveController;
+        private OvrController leftOvrController;
+        private OvrController rightOvrController;
 
         void Start()
         {
@@ -36,98 +32,56 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
                 return;
             }
 
-            // // 初始化可配置按键，默认为 "G + I"
-            // toggleVisibilityShortcut = Config.Bind("Hotkeys", "Toggle GripMove IMGUI Visibility",
-            //     new KeyboardShortcut(KeyCode.I, KeyCode.G),
-            //     "The key or key combination to toggle GripMove IMGUI visibility.");
-
             var harmony = new Harmony("COM3D2.SyncGripMoveGUI.Plugin");
             harmony.PatchAll();
-
             CacheReflectionData();
+
+            // 获取左手和右手控制器的 Transform
+            leftHandAnchor = GameMain.Instance.OvrMgr.GetVRControllerTransform(true);
+            rightHandAnchor = GameMain.Instance.OvrMgr.GetVRControllerTransform(false);
+
+            // 缓存控制器组件
+            if (GameMain.Instance.VRFamily == GameMain.VRFamilyType.Oculus)
+            {
+                leftOvrController = leftHandAnchor?.gameObject.GetComponent<OvrController>();
+                rightOvrController = rightHandAnchor?.gameObject.GetComponent<OvrController>();
+            }
+            else if (GameMain.Instance.VRFamily == GameMain.VRFamilyType.HTC)
+            {
+                leftViveController = leftHandAnchor?.gameObject.GetComponent<ViveController>();
+                rightViveController = rightHandAnchor?.gameObject.GetComponent<ViveController>();
+            }
         }
 
-        // void Update()
-        // {
-        //     if (toggleVisibilityShortcut.Value.IsDown())
-        //     {
-        //         ToggleVisibility();
-        //     }
-        // }
+        void Update()
+        {
+            isDirectModeActive = IsDirectMode();
+            if (isDirectModeActive != previousIsDirectModeActive)
+            {
+                previousIsDirectModeActive = isDirectModeActive;
+                if (isOfficalTableVisible && isDirectModeActive)
+                {
+                    ChangeOldGUIVisible(true);
+                }
+                Debug.Log("Direct Mode 状态已更改为: " + isDirectModeActive);
+            }
+        }
 
-        // 手动切换可见性的方法
-        // private void ToggleVisibility()
-        // {
-        //     isOldGUIVisible = !isOldGUIVisible;
-        //     ChangeOldGUIVisible();
-        // }
-
-        // 用于缓存反射获取的类型和属性，避免重复获取
         private static void CacheReflectionData()
         {
             try
             {
-                // 获取所有已加载的程序集
                 var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                // 找到 GripMovePlugin 所在的程序集
-                gripMoveAssembly =
-                    assemblies.FirstOrDefault(a => a.GetType("CM3D2.GripMovePlugin.Plugin.GripMovePlugin") != null);
-
+                var gripMoveAssembly =
+                    assemblies.FirstOrDefault(a => a.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad") != null);
                 if (gripMoveAssembly != null)
                 {
-                    // 获取 GripMovePlugin 类型
-                    gripMovePluginType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.GripMovePlugin");
-                    // 获取 MenuTool 类型
-                    menuToolType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.MenuTool");
-                    // 获取 IMGUIQuad 类型
-                    imguiQuadType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad");
-
-                    if (gripMovePluginType != null)
+                    var imguiQuadType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad");
+                    isVisbleProperty = imguiQuadType?.GetProperty("IsVisble",
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (isVisbleProperty == null)
                     {
-                        // 获取 menuTool 字段
-                        menuToolField = gripMovePluginType.GetField("menuTool",
-                            BindingFlags.Instance | BindingFlags.NonPublic);
-
-                        if (menuToolType != null)
-                        {
-                            // 获取 IsDirectModeActive 方法
-                            isDirectModeActiveMethod = menuToolType.GetMethod("IsDirectModeActive",
-                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                        }
-                        else
-                        {
-                            Debug.LogError("SyncGripMoveGUIPlugin Error: MenuTool type not found.");
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError("SyncGripMoveGUIPlugin Error: GripMovePlugin type not found.");
-                    }
-
-                    if (imguiQuadType != null)
-                    {
-                        // 获取 IsVisble 属性
-                        isVisbleProperty = imguiQuadType.GetProperty("IsVisble",
-                            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    }
-                    else
-                    {
-                        Debug.LogError("SyncGripMoveGUIPlugin Error: IMGUIQuad type not found.");
-                    }
-
-
-                    // 获取 GripMovePlugin 实例
-                    cachedGripMovePluginInstance =
-                        UnityEngine.Object.FindObjectsOfType(gripMovePluginType).FirstOrDefault();
-
-                    if (cachedGripMovePluginInstance != null)
-                    {
-                        // 获取 menuTool 的实例
-                        cachedMenuToolInstance = menuToolField?.GetValue(cachedGripMovePluginInstance);
-                    }
-                    else
-                    {
-                        Debug.LogError("SyncGripMoveGUIPlugin Error: GripMovePlugin Instance not found.");
+                        Debug.LogError("SyncGripMoveGUIPlugin Error: IsVisble Property not found.");
                     }
                 }
                 else
@@ -137,115 +91,89 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
             }
             catch (Exception ex)
             {
-                Debug.LogError("SyncGripMoveGUIPlugin Error while caching reflection data: " + ex);
+                Debug.LogError("SyncGripMoveGUIPlugin: CacheReflectionData Error : " + ex);
             }
         }
 
-        // 更改 OldGUI 可见性
-        public static void ChangeOldGUIVisible()
+        private bool IsDirectMode()
+        {
+            bool isDirect = false;
+            if (GameMain.Instance.VRFamily == GameMain.VRFamilyType.Oculus)
+            {
+                if (!leftOvrController)
+                {
+                    leftOvrController = leftHandAnchor?.gameObject.GetComponent<OvrController>();
+                }
+
+                if (!rightOvrController)
+                {
+                    rightOvrController = rightHandAnchor?.gameObject.GetComponent<OvrController>();
+                }
+
+                if ((!leftOvrController || !leftOvrController.enabled) ||
+                    (!rightOvrController || !rightOvrController.enabled))
+                {
+                    isDirect = true;
+                }
+            }
+            else if (GameMain.Instance.VRFamily == GameMain.VRFamilyType.HTC)
+            {
+                if (!leftViveController)
+                {
+                    leftViveController = leftHandAnchor?.gameObject.GetComponent<ViveController>();
+                }
+
+                if (!rightViveController)
+                {
+                    rightViveController = rightHandAnchor?.gameObject.GetComponent<ViveController>();
+                }
+
+                if ((!leftViveController || !leftViveController.enabled) ||
+                    (!rightViveController || !rightViveController.enabled))
+                {
+                    isDirect = true;
+                }
+            }
+
+            return isDirect;
+        }
+
+        public static void ChangeOldGUIVisible(bool visible)
         {
             try
             {
-                // 检查是否已经缓存了必要的反射数据
-                if (gripMoveAssembly == null || gripMovePluginType == null || menuToolType == null ||
-                    imguiQuadType == null || isVisbleProperty == null || isDirectModeActiveMethod == null ||
-                    menuToolField == null || cachedGripMovePluginInstance == null || cachedMenuToolInstance == null)
+                if (isVisbleProperty == null)
                 {
                     CacheReflectionData();
-                    // 如果缓存失败，退出
-                    if (gripMoveAssembly == null || gripMovePluginType == null || menuToolType == null ||
-                        imguiQuadType == null || isVisbleProperty == null || isDirectModeActiveMethod == null ||
-                        menuToolField == null || cachedGripMovePluginInstance == null || cachedMenuToolInstance == null)
-                    {
-                        Debug.LogError("SyncGripMoveGUIPlugin Error: Failed to cache reflection data.");
-                        return;
-                    }
                 }
 
-                // 获取当前的 isOfficalTableVisible 值
-                bool isOfficalTableVisible = SyncGripMoveGUI.isOfficalTableVisible;
-                bool isDirectModeActive = false;
-
-                // 通过反射调用 IsDirectModeActive 方法，获取当前的 isDirectModeActive 值
-                isDirectModeActive = (bool)isDirectModeActiveMethod.Invoke(cachedMenuToolInstance, null);
-
-                if (isVisbleProperty != null)
-                {
-                    // 设置 IsVisble 属性的值( OldGUI 是否显示)
-                    isVisbleProperty?.SetValue(
-                        obj: null,
-                        value: isOfficalTableVisible && isDirectModeActive,
-                        invokeAttr: BindingFlags.Static | BindingFlags.SetProperty | BindingFlags.NonPublic |
-                                    BindingFlags.Public,
-                        binder: null,
-                        index: null,
-                        culture: CultureInfo.InvariantCulture
-                    );
-                }
-                else
-                {
-                    Debug.LogError("SyncGripMoveGUIPlugin Error: IsVisble property not found.");
-                }
+                isVisbleProperty?.SetValue(
+                    obj: null,
+                    value: visible,
+                    invokeAttr: BindingFlags.Static | BindingFlags.SetProperty | BindingFlags.NonPublic |
+                                BindingFlags.Public,
+                    binder: null,
+                    index: null,
+                    culture: CultureInfo.InvariantCulture
+                );
             }
             catch (Exception ex)
             {
                 Debug.LogError("SyncGripMoveGUIPlugin Error: " + ex);
             }
         }
-    }
 
-    // 对 OvrCamera 的 ShowUI(bool f_bShow) 方法进行补丁
-    [HarmonyPatch]
-    public class OvrCameraShowUIPatch
-    {
-        // 指定要补丁的方法
-        static MethodBase TargetMethod()
+        [HarmonyPatch(typeof(OvrCamera), "ShowUI")]
+        public class OvrCameraShowUIPatch
         {
-            var ovrCameraType = typeof(OvrCamera);
-            return ovrCameraType.GetMethod("ShowUI",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        }
-
-        // 在 ShowUI 方法执行后调用
-        public static void Postfix(bool f_bShow)
-        {
-            SyncGripMoveGUI.isOfficalTableVisible = f_bShow;
-            SyncGripMoveGUI.ChangeOldGUIVisible();
-        }
-    }
-
-    // 对 MenuTool 的 OnDirectModeEnabledChanged(bool newMode) 方法进行补丁
-    [HarmonyPatch]
-    public class MenuTool_OnDirectModeEnabledChanged_Patch
-    {
-        // 指定要补丁的方法
-        static MethodBase TargetMethod()
-        {
-            // 获取所有已加载的程序集
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            // 找到 GripMovePlugin 所在的程序集
-            var gripMoveAssembly =
-                assemblies.FirstOrDefault(a => a.GetType("CM3D2.GripMovePlugin.Plugin.MenuTool") != null);
-
-            if (gripMoveAssembly != null)
+            public static void Postfix(bool f_bShow)
             {
-                // 获取 MenuTool 类型
-                var menuToolType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.MenuTool");
-                if (menuToolType != null)
+                SyncGripMoveGUI.isOfficalTableVisible = f_bShow;
+                if (!f_bShow)
                 {
-                    // 返回 OnDirectModeEnabledChanged 方法
-                    return menuToolType.GetMethod("OnDirectModeEnabledChanged",
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    SyncGripMoveGUI.ChangeOldGUIVisible(f_bShow);
                 }
             }
-
-            return null;
-        }
-
-        // 在 OnDirectModeEnabledChanged 方法执行后调用
-        public static void Postfix(object __instance, bool newMode)
-        {
-            SyncGripMoveGUI.ChangeOldGUIVisible();
         }
     }
 }
