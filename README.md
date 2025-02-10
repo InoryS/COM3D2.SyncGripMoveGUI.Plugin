@@ -1,3 +1,6 @@
+[English](#english) | [简体中文](#%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)
+
+# English
 # COM3D2.SyncGripMoveGUI.Plugin
  COM3D2 Sync [COM3D2.GripMovePlugin's](https://ux.getuploader.com/scarletkom_mod/download/45) "OLD GUI" with offical tablet GUI, avoid the annoying white pointer.
 
@@ -18,6 +21,7 @@ BepinEx Plugin, place DLLs into your BepinEx/plugins folder.
 
 <br>
 
+# 简体中文
 COM3D2 将 [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) 插件的 “旧 GUI” 模式与官方平板电脑 GUI 同步，避免烦人的白色指针。
 
 BepinEx 插件，将 DLL 放入 BepinEx/plugins 文件夹中。
