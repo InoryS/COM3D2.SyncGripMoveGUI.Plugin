@@ -6,7 +6,7 @@ using UnityEngine;
 using System.Linq;
 using System.Globalization;
 
-[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
 namespace COM3D2.SyncGripMoveGUI.Plugin
 {
     [BepInPlugin("COM3D2.SyncGripMoveGUI.Plugin", "COM3D2.SyncGripMoveGUI.Plugin", "1.1.0.0")]
