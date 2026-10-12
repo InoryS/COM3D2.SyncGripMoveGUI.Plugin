@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net35</TargetFramework>
@@ -41,7 +41,7 @@
         <PackageReference Include="HarmonyX" Version="2.13.0" />
         <PackageReference Include="UnityEngine.Modules" Version="5.6.3" IncludeAssets="compile" />
 <!--        Actually not necessary, but i just leave it here-->
-<!--        <Reference Include="CM3D2.GripMovePlugin.Plugin">-->
+<!--        <Reference Include="COM3D2.GripMovePlugin.Plugin">-->
 <!--            <HintPath>..\libs\COM3D2.GripMovePlugin.Plugin.dll</HintPath>-->
 <!--        </Reference>-->
     </ItemGroup>

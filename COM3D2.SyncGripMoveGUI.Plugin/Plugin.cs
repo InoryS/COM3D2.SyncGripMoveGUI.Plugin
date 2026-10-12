@@ -21,6 +21,17 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
         private Transform rightHandAnchor;
         private static PropertyInfo isVisbleProperty;
 
+        /// <summary>
+        /// GripMovePlugin 里 IMGUIQuad 的类型全名。
+        /// GripMovePlugin 0.8.9.4 及更早版本用 CM3D2 前缀，0.8.9.5 起改为 COM3D2 前缀，这里两个都兼容。
+        /// 数组顺序即查找优先级。
+        /// </summary>
+        private static readonly string[] ImguiQuadTypeNames =
+        {
+            "COM3D2.GripMovePlugin.Plugin.IMGUIQuad", // 0.8.9.5+
+            "CM3D2.GripMovePlugin.Plugin.IMGUIQuad"   // 0.8.9.4 and earlier
+        };
+
         private ViveController leftViveController;
         private ViveController rightViveController;
         private OvrController leftOvrController;
@@ -68,27 +79,53 @@ namespace COM3D2.SyncGripMoveGUI.Plugin
         {
             try
             {
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                var gripMoveAssembly =
-                    assemblies.FirstOrDefault(a => a.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad") != null);
-                if (gripMoveAssembly == null)
+                var imguiQuadType = ImguiQuadTypeNames.Select(FindType).FirstOrDefault(t => t != null);
+                if (imguiQuadType == null)
                 {
-                    Debug.LogError("SyncGripMoveGUIPlugin Error: GripMovePlugin assembly not found.");
+                    Debug.LogError("SyncGripMoveGUIPlugin Error: GripMovePlugin IMGUIQuad type not found. Tried: " +
+                                   string.Join(", ", ImguiQuadTypeNames));
                     return;
                 }
 
-                var imguiQuadType = gripMoveAssembly.GetType("CM3D2.GripMovePlugin.Plugin.IMGUIQuad");
-                isVisbleProperty = imguiQuadType?.GetProperty("IsVisble",
+                isVisbleProperty = imguiQuadType.GetProperty("IsVisble",
                     BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                 if (isVisbleProperty == null)
                 {
                     Debug.LogError("SyncGripMoveGUIPlugin Error: IMGUIQuad IsVisble Property not found.");
+                }
+                else
+                {
+                    Debug.Log("SyncGripMoveGUIPlugin: IMGUIQuad found as " + imguiQuadType.FullName);
                 }
             }
             catch (Exception ex)
             {
                 Debug.LogError("SyncGripMoveGUIPlugin: CacheReflectionData Error : " + ex);
             }
+        }
+
+        /// <summary>
+        /// 在所有已加载程序集里按类型全名查找类型。解析失败的程序集会被跳过。
+        /// </summary>
+        private static Type FindType(string fullName)
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    var type = assembly.GetType(fullName);
+                    if (type != null)
+                    {
+                        return type;
+                    }
+                }
+                catch
+                {
+                    // 个别程序集在解析类型时可能抛异常，忽略并继续查找
+                }
+            }
+
+            return null;
         }
 
         private void InitializeControllers()
