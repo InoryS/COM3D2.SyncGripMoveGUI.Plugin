@@ -2,7 +2,7 @@
 
 # English
 # COM3D2.SyncGripMoveGUI.Plugin
- COM3D2 Sync [COM3D2.GripMovePlugin's](https://ux.getuploader.com/scarletkom_mod/download/45) "OLD GUI" with offical tablet GUI, avoid the annoying white pointer.
+ COM3D2 Sync [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) and [https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin](https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin) "OLD GUI" with offical tablet GUI, avoid the annoying white pointer.
 
 In VR, the original game UI is placed on a floating tablet, where you can operate.
 
@@ -29,7 +29,7 @@ BepinEx Plugin, place DLLs into your BepinEx/plugins folder.
 <br>
 
 # 简体中文
-COM3D2 插件：将 [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) 插件的 “旧 GUI” 模式与官方平板电脑 GUI 同步，避免烦人的白色指针。
+COM3D2 插件：将 [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) 和 [https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin](https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin) 插件的 “旧 GUI” 模式与官方平板电脑 GUI 同步，避免烦人的白色指针。
 
 在 VR 环境中，原有的游戏 UI 界面会被放置到一个悬浮的平板电脑上，你可以在上面操作。
 
@@ -61,7 +61,7 @@ BepinEx 插件，将 DLL 放入 BepinEx/plugins 文件夹中。
 # 日本語
 AI translate
 
-COM3D2 プラグイン: [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) の「旧GUI」モードを公式タブレットGUIと同期させ、煩わしい白いカーソルを回避するプラグイン。
+COM3D2 プラグイン: [COM3D2.GripMovePlugin](https://ux.getuploader.com/scarletkom_mod/download/45) and [https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin](https://github.com/InoryS/COM3D2.GripMovePlugin.Plugin) の「旧GUI」モードを公式タブレットGUIと同期させ、煩わしい白いカーソルを回避するプラグイン。
 
 VR環境では、ゲームの既存のUIは浮遊するタブレット上に配置され、そこから操作できます。
 
